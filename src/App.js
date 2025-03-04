@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Line, Html } from "@react-three/drei";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { OrbitControls, Line, Html, TextureLoader } from "@react-three/drei";
 import * as THREE from "three";
 
 // Function to generate evenly spaced points on a sphere using Fibonacci Sphere method
@@ -27,6 +27,29 @@ const particleNames = [
   "AI", "Robotics", "Spatial Intelligence", "Computer Vision",
   "Drones IoT", "Security", "Cultural Heritage", "Safe School", "ION", "MIT MST"
 ];
+
+// Create a radial gradient texture for blended aura
+function createRadialGradientTexture() {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d");
+
+  const gradient = context.createRadialGradient(
+    size / 2, size / 2, 0,
+    size / 2, size / 2, size / 2
+  );
+  gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+  gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, size, size);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+const auraTexture = createRadialGradientTexture();
 
 function BlueParticles({ onPositionSave, onParticleClick }) {
   const count = 10;  // 10 blue particles
@@ -62,17 +85,18 @@ function GlowingParticle({ position, name, onClick }) {
           emissive="#00ffff"            
           emissiveIntensity={0.7}       
           roughness={0.1}               
-          metalness={0.3}               
+          metalness={0.3}             
         />
       </mesh>
 
-      {/* Circular Aura Effect */}
+      {/* Blended Aura Effect */}
       <mesh>
-        <sphereGeometry args={[0.2, 32, 32]} />  {/* Larger for aura */}
+        <sphereGeometry args={[0.2, 10, 10]} />  {/* Larger for aura */}
         <meshStandardMaterial 
           color="#00ffff" 
           transparent={true} 
-          opacity={0.3}               // Consistent opacity for a clean circular aura
+          opacity={0.5}               // Start with half opacity
+          alphaMap={auraTexture}      // Use gradient texture for smooth blending
           depthWrite={false}          // Prevent z-fighting
         />
       </mesh>
@@ -80,7 +104,7 @@ function GlowingParticle({ position, name, onClick }) {
       <Html position={[0, 0.2, 0]} center>
         <div style={{
           color: 'white',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          // backgroundColor: 'rgba(0, 0, 0, 0.5)',
           padding: '2px 4px',
           borderRadius: '4px',
           fontSize: '10px',
@@ -135,8 +159,9 @@ function ConnectingLine({ start, end }) {
   const points = useMemo(() => {
     if (!start || !end) return [];
     const startVec = new THREE.Vector3(...start);
-    const endVec = new THREE.Vector3().lerpVectors(startVec, endVec, progress);
-    return [startVec, endVec];
+    const endVec = new THREE.Vector3(...end);
+    const interpolatedVec = new THREE.Vector3().lerpVectors(startVec, endVec, progress);
+    return [startVec, interpolatedVec];
   }, [start, end, progress]);
 
   if (points.length === 0) return null;
