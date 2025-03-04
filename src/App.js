@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from "react";
+import React, { useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Line, Html } from "@react-three/drei";
 import * as THREE from "three";
@@ -187,7 +187,9 @@ function RotatingScene({ children }) {
 function App() {
   const [positions, setPositions] = useState({});
   const [lines, setLines] = useState([]);
-  const [connectedParticles, setConnectedParticles] = useState(new Set()); 
+  const [connectedParticles, setConnectedParticles] = useState(new Set());
+  const [message, setMessage] = useState(""); 
+  const [activeMessage, setActiveMessage] = useState(null); // Message field tracking
 
   const savePosition = (name, pos) => {
     setPositions((prev) => ({ ...prev, [name]: pos }));
@@ -196,65 +198,114 @@ function App() {
   const handleDTClick = () => {
     if (positions["AI"]) {
       setLines((prev) => [...prev, { start: [0, 0, 0], end: positions["AI"] }]);
-      setConnectedParticles(new Set(["DT", "AI"])); 
+      setConnectedParticles(new Set(["DT", "AI"]));
+      setActiveMessage({ name: "AI", position: positions["AI"] }); // Show message on AI
     }
   };
 
   const handleParticleClick = (name) => {
     let newConnections = new Set(connectedParticles);
-    
+    let nextParticle = null;
+
     if (name === "AI" && positions["Spatial Intelligence"]) {
+      nextParticle = "Spatial Intelligence";
       setLines((prev) => [
         ...prev,
-        { start: positions["AI"], end: positions["Spatial Intelligence"] }
+        { start: positions["AI"], end: positions[nextParticle] }
       ]);
-      newConnections.add("AI");
-      newConnections.add("Spatial Intelligence");
     } else if (name === "Spatial Intelligence" && positions["ION"]) {
+      nextParticle = "ION";
       setLines((prev) => [
         ...prev,
-        { start: positions["Spatial Intelligence"], end: positions["ION"] }
+        { start: positions["Spatial Intelligence"], end: positions[nextParticle] }
       ]);
-      newConnections.add("Spatial Intelligence");
-      newConnections.add("ION");
+    }
+
+    if (nextParticle) {
+      newConnections.add(name);
+      newConnections.add(nextParticle);
+      setActiveMessage({ name: nextParticle, position: positions[nextParticle] }); // Show message on the next particle
     }
 
     setConnectedParticles(newConnections);
   };
 
+  const handleMessageSubmit = (e) => {
+    e.preventDefault();
+    console.log(`Message for ${activeMessage.name}:`, message);
+    setMessage(""); 
+    setActiveMessage(null);
+  };
+
   return (
     <div className="bkgd">
-      <Canvas 
-        shadows 
-        camera={{ position: [0, 0, 5], fov: 75 }} 
-        style={{ height: "100vh" }}
-      >
-        {/* Lighting Setup */}
-        <ambientLight intensity={0.3} />
-        <directionalLight 
-          position={[2, 3, 4]} 
-          intensity={1} 
-          castShadow 
-          shadow-mapSize-width={1024} 
-          shadow-mapSize-height={1024}
-        />
-        
+      <Canvas camera={{ position: [0, 0, 5], fov: 75 }} style={{ height: "100vh" }}>
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[2, 3, 4]} intensity={1} castShadow />
         <OrbitControls enableZoom={true} />
+
         <RotatingScene>
           <RedCenterParticle onClick={handleDTClick} />
+
           <BlueParticles 
             onPositionSave={savePosition} 
             onParticleClick={handleParticleClick} 
             connectedParticles={connectedParticles} 
           />
+
           {lines.map((line, index) => (
             <ConnectingLine key={index} start={line.start} end={line.end} />
           ))}
+
+{activeMessage && (
+  <Html 
+    key={activeMessage.name}  // 🔥 Forces re-render on each new message
+    position={[
+      activeMessage.position[0], 
+      activeMessage.position[1] + 0.3, 
+      activeMessage.position[2]
+    ]} 
+    center
+  >
+    <div 
+      style={{
+        width: "200px",
+        background: "rgba(0, 0, 0, 0.7)",
+        padding: "8px",
+        borderRadius: "5px",
+        color: "white",
+        textAlign: "center",
+        fontSize: "14px",
+        maxWidth: "200px",
+        opacity: 0,  // Start hidden
+        animation: "fadeIn 0.6s ease-in-out forwards"  // 🔥 Smooth fade-in animation
+      }}
+    >
+      <p>Lorem ipsum blah blah blah blah blah blah blah blah blah</p>
+      <a href="http://www.google.com" style={{
+        color: "#00ffff",
+        textDecoration: "underline",
+        cursor: "pointer",
+        fontWeight: "bold"
+      }}>
+        Link
+      </a>
+    </div>
+  </Html>
+)}
+
+
+
         </RotatingScene>
-      </Canvas>
-    
+      </Canvas>      
     </div>
   );
 }
+// http://www.google.com
+
 
 export default App;
+
+
+
+// http://www.google.com
