@@ -4,7 +4,7 @@ import { OrbitControls, Line, Html } from "@react-three/drei";
 import * as THREE from "three";
 import './index.css';
 
-// Function to generate evenly spaced points on a sphere using Fibonacci Sphere method
+// Function to generate Fibonacci Sphere positions
 function generateFibonacciSphere(count, radius) {
   const positions = [];
   const goldenRatio = (1 + Math.sqrt(5)) / 2;
@@ -23,7 +23,6 @@ function generateFibonacciSphere(count, radius) {
   return positions;
 }
 
-// Particle names
 const particleNames = [
   "AI", "Robotics", "Spatial Intelligence", "Computer Vision",
   "Drones IoT", "Security", "Cultural Heritage", "Safe School", "ION", "MIT MST"
@@ -41,27 +40,27 @@ function GlowingParticle({ position, name, onClick, isConnected }) {
 
   return (
     <group position={position} onClick={onClick}>
-      {/* Core Sphere */}
-      <mesh>
+      {/* Core Sphere with Shadows */}
+      <mesh castShadow receiveShadow>
         <sphereGeometry args={[0.12, 64, 64]} />
         <meshStandardMaterial 
-          color={isConnected ? "#00ffff" : "#004444"}  
-          emissive={isConnected ? "#00ffff" : "#002222"}  
-          emissiveIntensity={isConnected ? 1.2 : 0.3} 
-          roughness={0.05}    
-          metalness={0.5}          
+          color={isConnected ? "#10adad" : "#004444"}  
+          emissive={isConnected ? "#10adad" : "#002222"}  
+          emissiveIntensity={isConnected ? 1.2 : 1.5} 
+          roughness={0.3}    
+          metalness={0.8}          
         />
       </mesh>
 
-      {/* Blended Aura Effect */}
-      <mesh ref={auraRef}>
+      {/* Aura Effect */}
+      <mesh ref={auraRef} receiveShadow>
         <sphereGeometry args={[0.25, 64, 64]} />
         <meshStandardMaterial 
-          color="#00ffff" 
+          color="#10adad" 
           transparent={true} 
-          opacity={0.15}  
+          opacity={0.55}  
           depthWrite={false}      
-          emissive={isConnected ? "#00ffff" : "#002222"}
+          emissive={isConnected ? "#10adad" : "#002222"}
           emissiveIntensity={isConnected ? 1.0 : 0.3} 
         />
       </mesh>
@@ -73,7 +72,8 @@ function GlowingParticle({ position, name, onClick, isConnected }) {
           padding: '2px 6px',
           borderRadius: '4px',
           fontSize: '20px',
-          textAlign: 'center'
+          textAlign: 'center',
+          transform: 'translateY(-25px)'
         }}>
           {name}
         </div>
@@ -81,6 +81,7 @@ function GlowingParticle({ position, name, onClick, isConnected }) {
     </group>
   );
 }
+
 
 function BlueParticles({ onPositionSave, onParticleClick, connectedParticles }) {
   const count = 10;
@@ -120,12 +121,20 @@ function RedCenterParticle({ onClick }) {
     <mesh ref={ref} position={[0, 0, 0]} onClick={onClick}>
       <sphereGeometry args={[0.2, 64, 64]} />
       <meshBasicMaterial color="#ff0000" />
+      <meshStandardMaterial 
+          color={ "#004444"}  
+          emissive={ "#2352a8"}  
+          emissiveIntensity={1.5} 
+          roughness={0.3}    
+          metalness={0.8}          
+        />
       <Html position={[0, 0.3, 0]} center>
         <div style={{
           color: 'white',
           padding: '2px 4px',
           borderRadius: '4px',
-          fontSize: '12px'
+          fontSize: '12px',
+          transform: 'translateY(-25px)'
         }}>
           DT
         </div>
@@ -135,11 +144,11 @@ function RedCenterParticle({ onClick }) {
 }
 
 function ConnectingLine({ start, end }) {
-  const [progress, setProgress] = useState(0); // Track drawing progress
+  const [progress, setProgress] = useState(0); 
 
   useFrame(() => {
     if (progress < 1) {
-      setProgress((prev) => Math.min(prev + 0.02, 1)); // Smooth interpolation
+      setProgress((prev) => Math.min(prev + 0.02, 1)); 
     }
   });
 
@@ -163,6 +172,17 @@ function ConnectingLine({ start, end }) {
   );
 }
 
+function RotatingScene({ children }) {
+  const groupRef = useRef();
+
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y += 0.0008; // Slow rotation
+    }
+  });
+
+  return <group ref={groupRef}>{children}</group>;
+}
 
 function App() {
   const [positions, setPositions] = useState({});
@@ -204,19 +224,35 @@ function App() {
 
   return (
     <div className="bkgd">
-      <Canvas camera={{ position: [0, 0, 5], fov: 75 }} style={{ height: "100vh" }}>
-        <ambientLight intensity={0.5} />
-        <OrbitControls enableZoom={true} />
-        <RedCenterParticle onClick={handleDTClick} />
-        <BlueParticles 
-          onPositionSave={savePosition} 
-          onParticleClick={handleParticleClick} 
-          connectedParticles={connectedParticles} 
+      <Canvas 
+        shadows 
+        camera={{ position: [0, 0, 5], fov: 75 }} 
+        style={{ height: "100vh" }}
+      >
+        {/* Lighting Setup */}
+        <ambientLight intensity={0.3} />
+        <directionalLight 
+          position={[2, 3, 4]} 
+          intensity={1} 
+          castShadow 
+          shadow-mapSize-width={1024} 
+          shadow-mapSize-height={1024}
         />
-        {lines.map((line, index) => (
-          <ConnectingLine key={index} start={line.start} end={line.end} />
-        ))}
-      </Canvas>      
+        
+        <OrbitControls enableZoom={true} />
+        <RotatingScene>
+          <RedCenterParticle onClick={handleDTClick} />
+          <BlueParticles 
+            onPositionSave={savePosition} 
+            onParticleClick={handleParticleClick} 
+            connectedParticles={connectedParticles} 
+          />
+          {lines.map((line, index) => (
+            <ConnectingLine key={index} start={line.start} end={line.end} />
+          ))}
+        </RotatingScene>
+      </Canvas>
+    
     </div>
   );
 }
