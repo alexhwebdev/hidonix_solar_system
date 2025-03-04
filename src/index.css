@@ -11,3 +11,11 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.bkgd {
+  width: 100vw;
+  height: 100vh;
+  background-image: url('../public/background.jpg');
+  position: absolute;
+  z-index: 100;
+}
